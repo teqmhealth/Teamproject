@@ -19,11 +19,9 @@ def supabase_request(method, endpoint, payload=None):
     elif method == "POST":
         return requests.post(url, headers=headers, json=payload).json()
 
-# قراءة بيانات من جدول القراءات باستخدام read_id
 def get_reading_by_id(read_id: int):
     return supabase_request("GET", f"tbl_reading?read_id=eq.{read_id}&select=*")
 
-# حفظ تقرير جديد في جدول التقارير مع تاريخ اليوم
 def save_report(pat_id: int, diagnosis: str, recommendation: str):
     payload = {
         "pat_id": pat_id,
@@ -35,6 +33,43 @@ def save_report(pat_id: int, diagnosis: str, recommendation: str):
 
 @app.post("/analyze_reading/{read_id}")
 def analyze_reading(read_id: int):
+    readings = get_reading_by_id(read_id)
+    if not readings:
+        return {"error": "لا توجد قراءة بهذا الرقم"}
+
+    reading = readings[0]
+    pat_id = reading.get("pat_id")
+    oxygen = reading.get("oxygen_saturation")
+    pulse = reading.get("pulse_rate")
+    temp = reading.get("temperature")
+
+    if oxygen is not None and oxygen < 90:
+        diagnosis = "انخفاض الأكسجين"
+        recommendation = "يجب مراجعة الطبيب فورًا"
+    elif pulse is not None and pulse > 120:
+        diagnosis = "معدل نبض مرتفع"
+        recommendation = "ينصح بالراحة ومراجعة الطبيب"
+    elif temp is not None and temp > 38:
+        diagnosis = "حرارة مرتفعة"
+        recommendation = "تناول سوائل وخافض حرارة"
+    else:
+        diagnosis = "بخير"
+        recommendation = "لا تهمل نفسك"
+
+    report = save_report(pat_id, diagnosis, recommendation)
+
+    return {
+        "read_id": read_id,
+        "pat_id": pat_id,
+        "rep_date": report[0].get("rep_date") if report else None,
+        "rep_diagnosis": diagnosis,
+        "rep_recommendation": recommendation
+    }
+
+@app.get("/reports")
+def get_reports():
+    reports = supabase_request("GET", "tbl_report?select=*")
+    return {"reports": reports}def analyze_reading(read_id: int):
     readings = get_reading_by_id(read_id)
     if not readings:
         return {"error": "لا توجد قراءة بهذا الرقم"}
