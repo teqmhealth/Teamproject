@@ -5,4 +5,4 @@ requests
 scikit-learn
 numpy
 python-dotenv
-tensorflow-cpu
+tensorflow==2.12.0
