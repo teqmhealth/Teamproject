@@ -118,9 +118,7 @@ def predict_ecg_get(pat_id: int):
         return {"error": "المريض غير موجود"}
 
     age = patient[0].get("pat_age")
-    if age is None:
-        return {"error": "لا توجد بيانات عمر"}
-
+    
     status = "خطر" if age > 30 else "طبيعي"
     update_patient_status(pat_id, status)
 
