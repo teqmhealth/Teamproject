@@ -1,9 +1,7 @@
-pip>=26.0.1
 fastapi
 uvicorn
 requests
 scikit-learn
 numpy
 python-dotenv
-keras
 keras-core
