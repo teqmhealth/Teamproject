@@ -141,3 +141,71 @@ def train_ecg_by_patient(pat_id: int):
 def predict_ecg_by_patient(pat_id: int):
     readings = supabase_request(f"tbl_ecg?pat_id=eq.{pat_id}&select=*")
     return {"predictions": [predict_model_generic("ecg", [r["signal_value"]]) for r in readings if r.get("signal_value")]}
+# -------------------------------
+# مسارات التدريب لبقية النماذج
+# -------------------------------
+@app.get("/train/oxygen/by_patient/{pat_id}")
+def train_oxygen_by_patient(pat_id: int):
+    return train_model_generic("tbl_oxygen", ["oxygen_value"], "diagnosis_label", "oxygen_model.keras", 2, filter_query=f"pat_id=eq.{pat_id}")
+
+@app.get("/train/temperature/by_patient/{pat_id}")
+def train_temperature_by_patient(pat_id: int):
+    return train_model_generic("tbl_temperature", ["temp_value"], "diagnosis_label", "temperature_model.keras", 2, filter_query=f"pat_id=eq.{pat_id}")
+
+@app.get("/train/fall/by_patient/{pat_id}")
+def train_fall_by_patient(pat_id: int):
+    return train_model_generic("tbl_fall", ["fall_value"], "diagnosis_label", "fall_model.keras", 2, filter_query=f"pat_id=eq.{pat_id}")
+
+@app.get("/train/heart_attack/by_patient/{pat_id}")
+def train_heart_attack_by_patient(pat_id: int):
+    return train_model_generic("tbl_heart_attack", ["attack_value"], "diagnosis_label", "heart_attack_model.keras", 2, filter_query=f"pat_id=eq.{pat_id}")
+
+@app.get("/train/arrhythmia/by_patient/{pat_id}")
+def train_arrhythmia_by_patient(pat_id: int):
+    return train_model_generic("tbl_arrhythmia", ["arrhythmia_value"], "diagnosis_label", "arrhythmia_model.keras", 2, filter_query=f"pat_id=eq.{pat_id}")
+
+@app.get("/train/gps/by_patient/{pat_id}")
+def train_gps_by_patient(pat_id: int):
+    return train_model_generic("tbl_gps", ["latitude","longitude"], "diagnosis_label", "gps_model.keras", 2, filter_query=f"pat_id=eq.{pat_id}")
+
+@app.get("/train/maigghn/by_patient/{pat_id}")
+def train_maigghn_by_patient(pat_id: int):
+    return train_model_generic("tbl_maigghn", ["maigghn_value"], "diagnosis_label", "maigghn_model.keras", 2, filter_query=f"pat_id=eq.{pat_id}")
+
+# -------------------------------
+# مسارات التنبؤ لبقية النماذج
+# -------------------------------
+@app.get("/predict/oxygen/by_patient/{pat_id}")
+def predict_oxygen_by_patient(pat_id: int):
+    readings = supabase_request(f"tbl_oxygen?pat_id=eq.{pat_id}&select=*")
+    return {"predictions": [predict_model_generic("oxygen", [r["oxygen_value"]]) for r in readings if r.get("oxygen_value")]}
+
+@app.get("/predict/temperature/by_patient/{pat_id}")
+def predict_temperature_by_patient(pat_id: int):
+    readings = supabase_request(f"tbl_temperature?pat_id=eq.{pat_id}&select=*")
+    return {"predictions": [predict_model_generic("temperature", [r["temp_value"]]) for r in readings if r.get("temp_value")]}
+
+@app.get("/predict/fall/by_patient/{pat_id}")
+def predict_fall_by_patient(pat_id: int):
+    readings = supabase_request(f"tbl_fall?pat_id=eq.{pat_id}&select=*")
+    return {"predictions": [predict_model_generic("fall", [r["fall_value"]]) for r in readings if r.get("fall_value")]}
+
+@app.get("/predict/heart_attack/by_patient/{pat_id}")
+def predict_heart_attack_by_patient(pat_id: int):
+    readings = supabase_request(f"tbl_heart_attack?pat_id=eq.{pat_id}&select=*")
+    return {"predictions": [predict_model_generic("heart_attack", [r["attack_value"]]) for r in readings if r.get("attack_value")]}
+
+@app.get("/predict/arrhythmia/by_patient/{pat_id}")
+def predict_arrhythmia_by_patient(pat_id: int):
+    readings = supabase_request(f"tbl_arrhythmia?pat_id=eq.{pat_id}&select=*")
+    return {"predictions": [predict_model_generic("arrhythmia", [r["arrhythmia_value"]]) for r in readings if r.get("arrhythmia_value")]}
+
+@app.get("/predict/gps/by_patient/{pat_id}")
+def predict_gps_by_patient(pat_id: int):
+    readings = supabase_request(f"tbl_gps?pat_id=eq.{pat_id}&select=*")
+    return {"predictions": [predict_model_generic("gps", [r["latitude"], r["longitude"]]) for r in readings if r.get("latitude") and r.get("longitude")]}
+
+@app.get("/predict/maigghn/by_patient/{pat_id}")
+def predict_maigghn_by_patient(pat_id: int):
+    readings = supabase_request(f"tbl_maigghn?pat_id=eq.{pat_id}&select=*")
+    return {"predictions": [predict_model_generic("maigghn", [r["maigghn_value"]]) for r in readings if r.get("maigghn_value")]}
