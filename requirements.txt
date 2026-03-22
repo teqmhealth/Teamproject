@@ -5,5 +5,5 @@ requests
 scikit-learn
 numpy
 python-dotenv
-torch
-torchvision
+keras
+keras-core
