@@ -1,7 +1,4 @@
-# تحديث pip قبل تثبيت المكتبات
 pip>=26.0.1
-
-# مكتبات المشروع
 fastapi
 uvicorn
 requests
