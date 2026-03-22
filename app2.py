@@ -61,7 +61,6 @@ def analyze_reading(read_id: int):
     return {
         "read_id": read_id,
         "pat_id": pat_id,
-    #    "rep_date": report[0].get("rep_date") if report else None,
         "rep_diagnosis": diagnosis,
         "rep_recommendation": recommendation
     }
