@@ -25,7 +25,9 @@ def update_patient_status(patid: int, status: str):
     }
     payload = {"patstatus": status}
     requests.patch(url, headers=headers, json=payload)
-
+@app.get("/predict/ecg/{patid}")
+def predict_ecg_get(patid: int):
+    return predict_ecg(patid)
 @app.post("/predict/ecg/{patid}")
 def predict_ecg(patid: int):
     patient = get_patient_by_id(patid)
