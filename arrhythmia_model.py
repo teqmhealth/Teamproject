@@ -2,18 +2,19 @@ def train_arrhythmia_model():
     readings = supabase_request("tbl_arrhythmia?select=*")
     X, y = [], []
     for r in readings:
-        if r.get("ecg_signal") is not None and r.get("diagnosis_label") is not None:
-            X.append([r["ecg_signal"]])
+        if r.get("arrhythmia_value") and r.get("diagnosis_label") is not None:
+            X.append([r["arrhythmia_value"]])
             y.append(r["diagnosis_label"])
-    if not X:
-        return {"error": "لا توجد بيانات مكتملة"}
+    if not X: return {"error": "لا توجد بيانات مكتملة"}
     X, y = np.array(X), np.array(y)
     y_cat = to_categorical(y, num_classes=2)
     X_train, X_test, y_train, y_test = train_test_split(X, y_cat, test_size=0.3)
-    model = Sequential([Dense(16, activation='relu', input_shape=(1,)),
-                        Dense(8, activation='relu'),
-                        Dense(2, activation='softmax')])
+    model = Sequential([
+        Dense(16, activation='relu', input_shape=(1,)),
+        Dense(8, activation='relu'),
+        Dense(2, activation='softmax')
+    ])
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     model.fit(X_train, y_train, epochs=50, batch_size=8, verbose=0)
-    model.save("arrhythmia_model.h5")
+    model.save("arrhythmia_model.keras")
     return {"accuracy": float(model.evaluate(X_test, y_test, verbose=0)[1])}
