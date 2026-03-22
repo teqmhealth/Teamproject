@@ -146,7 +146,7 @@ def predict(read_id: int):
         "rep_recommendation": recommendation
     }
     report = supabase_request("POST", "tbl_report", payload)
-
+return report
     # Supabase يرجع قائمة من الكائنات بعد الإدخال
     rep_date = None
     if isinstance(report, list) and len(report) > 0:
