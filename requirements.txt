@@ -1,8 +1,6 @@
-fastapi==0.110.0
-uvicorn==0.29.0
-requests==2.32.0
 fastapi
 uvicorn
 requests
 scikit-learn
 numpy
+python-dotenv
