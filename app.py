@@ -6,7 +6,6 @@ SUPABASE_KEY = "sbpublishablerUhjaGNhHHlkwHis22FqkgmG2Fswbz"
 
 app = FastAPI()
 
-# قراءة بيانات مريض واحد من Supabase
 def get_patient_by_id(pat_id: int):
     url = f"{SUPABASE_URL}/rest/v1/tblpatient?pat_id=eq.{pat_id}&select=*"
     headers = {
@@ -16,7 +15,6 @@ def get_patient_by_id(pat_id: int):
     response = requests.get(url, headers=headers)
     return response.json()
 
-# تحديث حالة المريض في Supabase
 def update_patient_status(pat_id: int, status: str):
     url = f"{SUPABASE_URL}/rest/v1/tblpatient?pat_id=eq.{pat_id}"
     headers = {
@@ -35,6 +33,27 @@ def predict_ecg(pat_id: int):
 
     age = patient[0].get("pat_age")
     if age is None:
+        return {"error": "لا توجد بيانات عمر"}
+
+    status = "خطر" if age > 30 else "طبيعي"
+    update_patient_status(pat_id, status)
+
+    return {"pat_id": pat_id, "status": status}
+
+@app.get("/predict/ecg/{pat_id}")
+def predict_ecg_get(pat_id: int):
+    patient = get_patient_by_id(pat_id)
+    if not patient:
+        return {"error": "المريض غير موجود"}
+
+    age = patient[0].get("pat_age")
+    if age is None:
+        return {"error": "لا توجد بيانات عمر"}
+
+    status = "خطر" if age > 30 else "طبيعي"
+    update_patient_status(pat_id, status)
+
+    return {"pat_id": pat_id, "status": status}    if age is None:
         return {"error": "لا توجد بيانات عمر"}
 
     # منطق مبسط للتجربة: إذا العمر أكبر من 30 → خطر
