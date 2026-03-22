@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 import requests, os, numpy as np
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.utils import to_categorical
+from keras import Sequential
+from keras.layers import Dense
+from keras.utils import to_categorical
+from keras.models import load_model
 from dotenv import load_dotenv
 
 # تحميل القيم من ملف .env
@@ -12,6 +13,9 @@ SUPABASE_URL, SUPABASE_KEY = os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"
 
 app = FastAPI()
 
+# -------------------------------
+# دالة عامة لاستدعاء بيانات من Supabase
+# -------------------------------
 def supabase_request(endpoint):
     url = f"{SUPABASE_URL}/rest/v1/{endpoint}"
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
@@ -62,7 +66,7 @@ def train_model_generic(table_name, features, label_field, filename, num_classes
     return {"message": f"تم تدريب النموذج وحفظه في {filename}", "accuracy": float(accuracy), "samples": len(readings)}
 
 def predict_model_generic(model_name, features):
-    filename = f"{model_name}_model.h5"
+    filename = f"{model_name}_model.keras"
     if not os.path.exists(filename):
         return {"error": f"النموذج {filename} غير موجود، درّبه أولاً"}
     model = load_model(filename)
@@ -76,7 +80,7 @@ def predict_model_generic(model_name, features):
     }
 
 # -------------------------------
-# دوال القراءة (عام + حسب المريض + حسب القراءة)
+# مسارات قراءة البيانات
 # -------------------------------
 @app.get("/patients")       ; def get_all_patients(): return {"patients": supabase_request("tbl_patient?select=*")}
 @app.get("/users")          ; def get_all_users(): return {"users": supabase_request("tbl_user?select=*")}
@@ -92,15 +96,18 @@ def predict_model_generic(model_name, features):
 @app.get("/maigghn")        ; def get_all_maigghn(): return {"maigghn": supabase_request("tbl_maigghn?select=*")}
 
 # -------------------------------
-# دوال التدريب لكل النماذج (by_patient + by_reading)
+# أمثلة لمسارات التدريب
 # -------------------------------
-@app.get("/train/ecg/by_patient/{pat_id}") ; def train_ecg_by_patient(pat_id: int): return train_model_generic("tbl_ecg", ["signal_value"], "diagnosis_label", "ecg_model.h5", 2, filter_query=f"pat_id=eq.{pat_id}")
-@app.get("/train/ecg/by_reading/{read_id}") ; def train_ecg_by_reading(read_id: int): return train_model_generic("tbl_ecg", ["signal_value"], "diagnosis_label", "ecg_model.h5", 2, filter_query=f"read_id=eq.{read_id}")
+@app.get("/train/ecg/by_patient/{pat_id}")
+def train_ecg_by_patient(pat_id: int):
+    return train_model_generic("tbl_ecg", ["signal_value"], "diagnosis_label", "ecg_model.keras", 2, filter_query=f"pat_id=eq.{pat_id}")
 
-# (نفس الأسلوب لبقية النماذج: Oxygen, Temperature, Fall, Heart Attack, Arrhythmia, GPS, Maigghn)
+@app.get("/train/ecg/by_reading/{read_id}")
+def train_ecg_by_reading(read_id: int):
+    return train_model_generic("tbl_ecg", ["signal_value"], "diagnosis_label", "ecg_model.keras", 2, filter_query=f"read_id=eq.{read_id}")
 
 # -------------------------------
-# دوال التنبؤ الفردي لكل النماذج (by_patient + by_reading)
+# أمثلة لمسارات التنبؤ
 # -------------------------------
 @app.get("/predict/ecg/by_patient/{pat_id}")
 def predict_ecg_by_patient(pat_id: int):
@@ -113,17 +120,14 @@ def predict_ecg_by_reading(read_id: int):
     if not readings: return {"error": "لا توجد قراءة بهذا الرقم"}
     return predict_model_generic("ecg", [readings[0]["signal_value"]])
 
-# (نفس الأسلوب لبقية النماذج: Oxygen, Temperature, Fall, Heart Attack, Arrhythmia, GPS, Maigghn)
-
 # -------------------------------
-# دوال التنبؤ الجماعي (by_patient + by_reading)
+# مسارات التنبؤ الجماعي
 # -------------------------------
 @app.get("/predict/all/by_patient/{pat_id}")
 def predict_all_by_patient(pat_id: int):
     results = {}
     ecg_readings = supabase_request(f"tbl_ecg?pat_id=eq.{pat_id}&select=*")
     if ecg_readings: results["ecg"] = [predict_model_generic("ecg", [r["signal_value"]]) for r in ecg_readings if r.get("signal_value")]
-    # (نفس الأسلوب لبقية النماذج)
     return {"pat_id": pat_id, "predictions": results}
 
 @app.get("/predict/all/by_reading/{read_id}")
@@ -131,5 +135,4 @@ def predict_all_by_reading(read_id: int):
     results = {}
     ecg_readings = supabase_request(f"tbl_ecg?read_id=eq.{read_id}&select=*")
     if ecg_readings: results["ecg"] = predict_model_generic("ecg", [ecg_readings[0]["signal_value"]])
-    # (نفس الأسلوب لبقية النماذج)
     return {"read_id": read_id, "predictions": results}
