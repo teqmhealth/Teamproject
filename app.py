@@ -32,8 +32,7 @@ def simple_logic(patient, mode: str):
     age = patient[0].get("pat_age")
     emergency = patient[0].get("is_emergency")
 
-    if age is None:
-        return "بيانات غير مكتملة"
+
 
     if mode == "ecg":
         return "خطر" if age > 30 else "طبيعي"
