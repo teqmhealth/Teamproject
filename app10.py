@@ -82,57 +82,62 @@ def predict_model_generic(model_name, features):
 # -------------------------------
 # مسارات قراءة البيانات
 # -------------------------------
-@app.get("/patients")       ; def get_all_patients(): return {"patients": supabase_request("tbl_patient?select=*")}
-@app.get("/users")          ; def get_all_users(): return {"users": supabase_request("tbl_user?select=*")}
-@app.get("/reports")        ; def get_all_reports(): return {"reports": supabase_request("tbl_report?select=*")}
-@app.get("/readings")       ; def get_all_readings(): return {"readings": supabase_request("tbl_reading?select=*")}
-@app.get("/ecg")            ; def get_all_ecg(): return {"ecg": supabase_request("tbl_ecg?select=*")}
-@app.get("/oxygen")         ; def get_all_oxygen(): return {"oxygen": supabase_request("tbl_oxygen?select=*")}
-@app.get("/temperature")    ; def get_all_temperature(): return {"temperature": supabase_request("tbl_temperature?select=*")}
-@app.get("/fall")           ; def get_all_fall(): return {"fall": supabase_request("tbl_fall?select=*")}
-@app.get("/heart_attack")   ; def get_all_heart_attack(): return {"heart_attack": supabase_request("tbl_heart_attack?select=*")}
-@app.get("/arrhythmia")     ; def get_all_arrhythmia(): return {"arrhythmia": supabase_request("tbl_arrhythmia?select=*")}
-@app.get("/gps")            ; def get_all_gps(): return {"gps": supabase_request("tbl_gps?select=*")}
-@app.get("/maigghn")        ; def get_all_maigghn(): return {"maigghn": supabase_request("tbl_maigghn?select=*")}
+@app.get("/patients")
+def get_all_patients():
+    return {"patients": supabase_request("tbl_patient?select=*")}
+
+@app.get("/users")
+def get_all_users():
+    return {"users": supabase_request("tbl_user?select=*")}
+
+@app.get("/reports")
+def get_all_reports():
+    return {"reports": supabase_request("tbl_report?select=*")}
+
+@app.get("/readings")
+def get_all_readings():
+    return {"readings": supabase_request("tbl_reading?select=*")}
+
+@app.get("/ecg")
+def get_all_ecg():
+    return {"ecg": supabase_request("tbl_ecg?select=*")}
+
+@app.get("/oxygen")
+def get_all_oxygen():
+    return {"oxygen": supabase_request("tbl_oxygen?select=*")}
+
+@app.get("/temperature")
+def get_all_temperature():
+    return {"temperature": supabase_request("tbl_temperature?select=*")}
+
+@app.get("/fall")
+def get_all_fall():
+    return {"fall": supabase_request("tbl_fall?select=*")}
+
+@app.get("/heart_attack")
+def get_all_heart_attack():
+    return {"heart_attack": supabase_request("tbl_heart_attack?select=*")}
+
+@app.get("/arrhythmia")
+def get_all_arrhythmia():
+    return {"arrhythmia": supabase_request("tbl_arrhythmia?select=*")}
+
+@app.get("/gps")
+def get_all_gps():
+    return {"gps": supabase_request("tbl_gps?select=*")}
+
+@app.get("/maigghn")
+def get_all_maigghn():
+    return {"maigghn": supabase_request("tbl_maigghn?select=*")}
 
 # -------------------------------
-# أمثلة لمسارات التدريب
+# أمثلة لمسارات التدريب والتنبؤ
 # -------------------------------
 @app.get("/train/ecg/by_patient/{pat_id}")
 def train_ecg_by_patient(pat_id: int):
     return train_model_generic("tbl_ecg", ["signal_value"], "diagnosis_label", "ecg_model.keras", 2, filter_query=f"pat_id=eq.{pat_id}")
 
-@app.get("/train/ecg/by_reading/{read_id}")
-def train_ecg_by_reading(read_id: int):
-    return train_model_generic("tbl_ecg", ["signal_value"], "diagnosis_label", "ecg_model.keras", 2, filter_query=f"read_id=eq.{read_id}")
-
-# -------------------------------
-# أمثلة لمسارات التنبؤ
-# -------------------------------
 @app.get("/predict/ecg/by_patient/{pat_id}")
 def predict_ecg_by_patient(pat_id: int):
     readings = supabase_request(f"tbl_ecg?pat_id=eq.{pat_id}&select=*")
     return {"predictions": [predict_model_generic("ecg", [r["signal_value"]]) for r in readings if r.get("signal_value")]}
-
-@app.get("/predict/ecg/by_reading/{read_id}")
-def predict_ecg_by_reading(read_id: int):
-    readings = supabase_request(f"tbl_ecg?read_id=eq.{read_id}&select=*")
-    if not readings: return {"error": "لا توجد قراءة بهذا الرقم"}
-    return predict_model_generic("ecg", [readings[0]["signal_value"]])
-
-# -------------------------------
-# مسارات التنبؤ الجماعي
-# -------------------------------
-@app.get("/predict/all/by_patient/{pat_id}")
-def predict_all_by_patient(pat_id: int):
-    results = {}
-    ecg_readings = supabase_request(f"tbl_ecg?pat_id=eq.{pat_id}&select=*")
-    if ecg_readings: results["ecg"] = [predict_model_generic("ecg", [r["signal_value"]]) for r in ecg_readings if r.get("signal_value")]
-    return {"pat_id": pat_id, "predictions": results}
-
-@app.get("/predict/all/by_reading/{read_id}")
-def predict_all_by_reading(read_id: int):
-    results = {}
-    ecg_readings = supabase_request(f"tbl_ecg?read_id=eq.{read_id}&select=*")
-    if ecg_readings: results["ecg"] = predict_model_generic("ecg", [ecg_readings[0]["signal_value"]])
-    return {"read_id": read_id, "predictions": results}
