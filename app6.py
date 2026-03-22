@@ -55,6 +55,16 @@ def get_readings_by_patient(pat_id: int):
     return {"pat_id": pat_id, "readings": readings}
 
 # -------------------------------
+# عرض التقارير حسب رقم المريض
+# -------------------------------
+@app.get("/reports/{pat_id}")
+def get_reports_by_patient(pat_id: int):
+    reports = supabase_request("GET", f"tbl_report?pat_id=eq.{pat_id}&select=*")
+    if not reports:
+        return {"error": f"لا توجد تقارير للمريض رقم {pat_id}"}
+    return {"pat_id": pat_id, "reports": reports}
+
+# -------------------------------
 # تدريب النموذج على جميع القراءات
 # -------------------------------
 @app.get("/train_model")
@@ -172,4 +182,4 @@ def predict(read_id: int):
         "rep_date": current_date,
         "rep_diagnosis": prediction,
         "rep_recommendation": recommendation
-      }
+    }
