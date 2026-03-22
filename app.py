@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 import requests
-from sklearn.linear_model import LogisticRegression
 
 SUPABASE_URL = "https://kzqcznveyxallyonedls.supabase.co"
 SUPABASE_KEY = "sbpublishablerUhjaGNhHHlkwHis22FqkgmG2Fswbz"
 
 app = FastAPI()
 
+# قراءة بيانات مريض واحد من Supabase
 def get_patient_by_id(patid: int):
     url = f"{SUPABASE_URL}/rest/v1/tblpatient?patid=eq.{patid}&select=*"
     headers = {
@@ -16,6 +16,7 @@ def get_patient_by_id(patid: int):
     response = requests.get(url, headers=headers)
     return response.json()
 
+# تحديث حالة المريض في Supabase
 def update_patient_status(patid: int, status: str):
     url = f"{SUPABASE_URL}/rest/v1/tblpatient?patid=eq.{patid}"
     headers = {
@@ -25,16 +26,30 @@ def update_patient_status(patid: int, status: str):
     }
     payload = {"patstatus": status}
     requests.patch(url, headers=headers, json=payload)
-@app.get("/predict/ecg/{patid}")
-def predict_ecg_get(patid: int):
-    return predict_ecg(patid)
+
+# Endpoint للتنبؤ بحالة ECG
 @app.post("/predict/ecg/{patid}")
 def predict_ecg(patid: int):
     patient = get_patient_by_id(patid)
     if not patient:
         return {"error": "المريض غير موجود"}
 
-    # مثال: تدريب نموذج بسيط على العمر مقابل حالة الطوارئ
+    age = patient[0].get("patage")
+    if age is None:
+        return {"error": "لا توجد بيانات عمر"}
+
+    # منطق مبسط للتجربة: إذا العمر أكبر من 30 → خطر
+    status = "خطر" if age > 30 else "طبيعي"
+
+    # تحديث Supabase
+    update_patient_status(patid, status)
+
+    return {"patid": patid, "status": status}
+
+# Endpoint GET إضافي حتى تقدر تستدعيه من المتصفح مباشرة
+@app.get("/predict/ecg/{patid}")
+def predict_ecg_get(patid: int):
+    return predict_ecg(patid)    # مثال: تدريب نموذج بسيط على العمر مقابل حالة الطوارئ
     data = get_patient_by_id(patid)
     X = [[p["patage"]] for p in data if p["patage"] is not None]
     y = [1 if p["isemergency"] else 0 for p in data if p["patage"] is not None]
