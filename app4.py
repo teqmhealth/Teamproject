@@ -141,12 +141,12 @@ def predict(read_id: int):
     # حفظ التقرير في جدول tbl_report
     payload = {
         "pat_id": pat_id,
-        "rep_date": datetime.utcnow().isoformat() + "Z",
+        "rep_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
         "rep_diagnosis": prediction,
         "rep_recommendation": recommendation
     }
     report = supabase_request("POST", "tbl_report", payload)
-return report
+
     # Supabase يرجع قائمة من الكائنات بعد الإدخال
     rep_date = None
     if isinstance(report, list) and len(report) > 0:
