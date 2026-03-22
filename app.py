@@ -48,4 +48,18 @@ def predict_ecg(pat_id: int):
 # Endpoint GET إضافي حتى تقدر تستدعيه من المتصفح مباشرة
 @app.get("/predict/ecg/{pat_id}")
 def predict_ecg_get(pat_id: int):
+    return predict_ecg(pat_id)    if age is None:
+        return {"error": "لا توجد بيانات عمر"}
+
+    # منطق مبسط للتجربة: إذا العمر أكبر من 30 → خطر
+    status = "خطر" if age > 30 else "طبيعي"
+
+    # تحديث Supabase
+    update_patient_status(pat_id, status)
+
+    return {"pat_id": pat_id, "status": status}
+
+# Endpoint GET إضافي حتى تقدر تستدعيه من المتصفح مباشرة
+@app.get("/predict/ecg/{pat_id}")
+def predict_ecg_get(pat_id: int):
     return predict_ecg(pat_id)
