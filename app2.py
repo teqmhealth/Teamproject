@@ -56,7 +56,7 @@ def analyze_reading(read_id: int):
         diagnosis = "بخير"
         recommendation = "لا تهمل نفسك"
 
-  #  report = save_report(pat_id, diagnosis, recommendation)
+   report = save_report(pat_id, diagnosis, recommendation)
 
     return {
         "read_id": read_id,
