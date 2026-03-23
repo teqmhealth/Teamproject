@@ -121,8 +121,8 @@ def predict_by_reading(read_id: int):
     report = generate_report(100 + read_id, pat_id, diagnosis, recommendation)
     alert = generate_alert(200 + read_id, pat_id, prediction, prob)
 
-    report_status = save_with_retry("tb_report", report)
-    alert_status = save_with_retry("tb_alert", alert)
+    report_status = save_with_retry("tbl_report", report)
+    alert_status = save_with_retry("tbl_alert", alert)
 
     summary = generate_summary_report(report, alert, prob)
 
@@ -150,8 +150,8 @@ def predict_by_patient(pat_id: int):
     report = generate_report(1000 + pat_id, pat_id, diagnosis, recommendation)
     alert = generate_alert(2000 + pat_id, pat_id, prediction, prob)
 
-    report_status = save_with_retry("tb_report", report)
-    alert_status = save_with_retry("tb_alert", alert)
+    report_status = save_with_retry("tbl_report", report)
+    alert_status = save_with_retry("tbl_alert", alert)
 
     summary = generate_summary_report(report, alert, prob)
 
@@ -167,7 +167,7 @@ def predict_by_patient(pat_id: int):
 # 🟢 إرجاع آخر تنبيهين
 @app.get("/alerts/latest")
 def get_latest_alerts():
-    response = supabase.table("tb_alert").select("*").order("alert_timestamp", desc=True).limit(2).execute()
+    response = supabase.table("tbl_alert").select("*").order("alert_timestamp", desc=True).limit(2).execute()
     if response.data:
         return {"status": "success", "latest_alerts": response.data}
     else:
