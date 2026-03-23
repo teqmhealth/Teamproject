@@ -1,40 +1,62 @@
-import os, numpy as np, itertools
-from datetime import datetime
 from fastapi import FastAPI
-from keras_core import Sequential
-from keras_core.layers import Dense
-from keras_core.models import load_model
-from keras_core.utils import to_categorical
-from sklearn.model_selection import train_test_split
-import requests
+import requests, json
+from datetime import datetime, timezone
+from dotenv import load_dotenv
+import os
+import ecg_model
 
 app = FastAPI()
-rep_counter = itertools.count(1)
+
+# تحميل القيم من ملف .env
+load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+API_KEY = os.getenv("SUPABASE_KEY")
 
-def supabase_request(endpoint: str, method="GET", data=None):
-    url = f"{SUPABASE_URL}/rest/v1/{endpoint}"
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json"
+HEADERS = {
+    "apikey": API_KEY,
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+
+def fetch_readings(pat_id):
+    url = f"{SUPABASE_URL}/rest/v1/tbl_reading?pat_id=eq.{pat_id}&select=*"
+    response = requests.get(url, headers=HEADERS)
+    return response.json()
+
+def save_report(pat_id, diagnosis, recommendation):
+    url = f"{SUPABASE_URL}/rest/v1/tbl_report"
+    data = {
+        "pat_id": pat_id,
+        "rep_date": datetime.now(timezone.utc).isoformat(),
+        "rep_diagnosis": diagnosis,
+        "rep_recommendation": recommendation
     }
-    if method == "GET":
-        return requests.get(url, headers=headers).json()
-    elif method == "POST":
-        return requests.post(url, headers=headers, json=data).json()
+    requests.post(url, headers=HEADERS, json=data)
 
-# -------------------------------
-# دالة عامة للتدريب
-# -------------------------------
-def train_model_generic(table_name, features, label_field, filename, num_classes=2):
-    readings = supabase_request(f"{table_name}?select=*")
-    if not readings:
-        return {"error": f"لا توجد بيانات في {table_name}"}
+def fetch_reports(pat_id):
+    url = f"{SUPABASE_URL}/rest/v1/tbl_report?pat_id=eq.{pat_id}&select=*"
+    response = requests.get(url, headers=HEADERS)
+    return response.json()
 
-    X, y = [], []
+@app.post("/process_patient/{pat_id}")
+def process_patient(pat_id: int):
+    readings = fetch_readings(pat_id)
+    results = []
+    for r in readings:
+        diagnosis = ecg_model.predict_ecg(r["pulse_rate"], r["oxygen_saturation"])
+        recommendation = "متابعة الطبيب" if diagnosis != "بخير" else "استمر على نفس النمط"
+        save_report(pat_id, diagnosis, recommendation)
+        results.append({"diagnosis": diagnosis, "recommendation": recommendation})
+    return {"reports": results}
+
+@app.get("/patients/{pat_id}")
+def get_patient_readings(pat_id: int):
+    return {"readings": fetch_readings(pat_id)}
+
+@app.get("/reports/{pat_id}")
+def get_patient_reports(pat_id: int):
+    return {"reports": fetch_reports(pat_id)}    X, y = [], []
     for r in readings:
         row = []
         for f in features:
