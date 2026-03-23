@@ -29,18 +29,17 @@ def train_model():
     joblib.dump(model, "models/health_model.pkl")
     return {"message": "تم تدريب النموذج وحفظه بنجاح", "accuracy": model.score(X, y)}
 
-# 🟢 توليد تقرير
-def generate_report(rep_id, pat_id, diagnosis, recommendation):
+# 🟢 توليد تقرير (بدون rep_id)
+def generate_report(pat_id, diagnosis, recommendation):
     return {
-        "rep_id": rep_id,
         "pat_id": pat_id,
         "rep_date": pd.Timestamp.now(tz="UTC").isoformat(),
         "rep_diagnosis": diagnosis,
         "rep_recommendation": recommendation
     }
 
-# 🟢 توليد تنبيه
-def generate_alert(alert_id, pat_id, emergency_flag, prob):
+# 🟢 توليد تنبيه (بدون alert_id)
+def generate_alert(pat_id, emergency_flag, prob):
     if emergency_flag == 1:
         if prob > 0.8:
             alert_type = "Critical Condition"
@@ -55,7 +54,6 @@ def generate_alert(alert_id, pat_id, emergency_flag, prob):
         is_seen = True
 
     return {
-        "alert_id": alert_id,
         "pat_id": pat_id,
         "alert_type": alert_type,
         "alert_message": alert_message,
@@ -119,8 +117,8 @@ def predict_by_reading(read_id: int):
     diagnosis = "خطر عالي" if prediction == 1 else "الوضع مستقر"
     recommendation = "يجب مراجعة الطبيب فورًا" if prediction == 1 else "استمر في المتابعة الدورية فقط"
 
-    report = generate_report(100 + read_id, pat_id, diagnosis, recommendation)
-    alert = generate_alert(200 + read_id, pat_id, prediction, prob)
+    report = generate_report(pat_id, diagnosis, recommendation)
+    alert = generate_alert(pat_id, prediction, prob)
 
     report_status = save_with_retry("tbl_report", report)
     alert_status = save_with_retry("tbl_alert", alert)
@@ -148,8 +146,8 @@ def predict_by_patient(pat_id: int):
     diagnosis = "خطر عالي" if prediction == 1 else "الوضع مستقر"
     recommendation = "يجب مراجعة الطبيب فورًا" if prediction == 1 else "استمر في المتابعة الدورية فقط"
 
-    report = generate_report(1000 + pat_id, pat_id, diagnosis, recommendation)
-    alert = generate_alert(2000 + pat_id, pat_id, prediction, prob)
+    report = generate_report(pat_id, diagnosis, recommendation)
+    alert = generate_alert(pat_id, prediction, prob)
 
     report_status = save_with_retry("tbl_report", report)
     alert_status = save_with_retry("tbl_alert", alert)
