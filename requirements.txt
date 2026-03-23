@@ -1,8 +1,8 @@
 fastapi
 uvicorn
-requests
-scikit-learn
-numpy
 python-dotenv
-keras-core
-torch
+requests
+pandas
+scikit-learn
+joblib
+supabase
