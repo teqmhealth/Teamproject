@@ -28,62 +28,53 @@ headers = {
 @app.get("/patients")
 def get_patients():
     url = f"{SUPABASE_URL}/rest/v1/tbl_patient?select=*"
-    r = requests.get(url, headers=headers)
-    return r.json()
+    return requests.get(url, headers=headers).json()
 
 @app.post("/patients")
 def add_patient(patient: dict):
     url = f"{SUPABASE_URL}/rest/v1/tbl_patient"
-    r = requests.post(url, headers=headers, json=patient)
-    return r.json()
+    return requests.post(url, headers=headers, json=patient).json()
 
 # 🟢 المستخدمين
 @app.get("/users")
 def get_users():
     url = f"{SUPABASE_URL}/rest/v1/tbl_user?select=*"
-    r = requests.get(url, headers=headers)
-    return r.json()
+    return requests.get(url, headers=headers).json()
 
 @app.post("/users")
 def add_user(user: dict):
     url = f"{SUPABASE_URL}/rest/v1/tbl_user"
-    r = requests.post(url, headers=headers, json=user)
-    return r.json()
+    return requests.post(url, headers=headers, json=user).json()
 
 # 🟢 القراءات
 @app.get("/readings")
 def get_readings():
     url = f"{SUPABASE_URL}/rest/v1/tbl_reading?select=*"
-    r = requests.get(url, headers=headers)
-    return r.json()
+    return requests.get(url, headers=headers).json()
 
 @app.post("/readings")
 def add_reading(reading: dict):
     url = f"{SUPABASE_URL}/rest/v1/tbl_reading"
-    r = requests.post(url, headers=headers, json=reading)
-    return r.json()
+    return requests.post(url, headers=headers, json=reading).json()
 
 # 🟢 التقارير
 @app.get("/reports")
 def get_reports():
     url = f"{SUPABASE_URL}/rest/v1/tbl_report?select=*"
-    r = requests.get(url, headers=headers)
-    return r.json()
+    return requests.get(url, headers=headers).json()
 
 @app.get("/reports/{pat_id}")
 def fetch_reports(pat_id: int):
     url = f"{SUPABASE_URL}/rest/v1/tbl_report?pat_id=eq.{pat_id}"
-    r = requests.get(url, headers=headers)
-    return r.json()
+    return requests.get(url, headers=headers).json()
 
 # 🟢 التنبيهات
 @app.get("/alerts")
 def get_alerts():
     url = f"{SUPABASE_URL}/rest/v1/tbl_alert?select=*"
-    r = requests.get(url, headers=headers)
-    return r.json()
+    return requests.get(url, headers=headers).json()
 
-# 🟢 رفع النموذج إلى GitHub
+# 🟢 رفع النموذج إلى GitHub (مع دعم التحديث)
 def upload_to_github(filepath, filename):
     with open(filepath, "rb") as f:
         content = f.read()
@@ -94,19 +85,22 @@ def upload_to_github(filepath, filename):
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
-    data = {
-        "message": f"Add model {filename}",
-        "content": b64_content
-    }
-    response = requests.put(url, headers=headers, json=data)
-    return response.json()
+
+    check = requests.get(url, headers=headers)
+    if check.status_code == 200:
+        sha = check.json()["sha"]
+        data = {"message": f"Update model {filename}", "content": b64_content, "sha": sha}
+    else:
+        data = {"message": f"Add model {filename}", "content": b64_content}
+
+    return requests.put(url, headers=headers, json=data).json()
 
 # 🟢 جلب البيانات من Supabase
 def fetch_readings_data():
     response = supabase.table("tbl_reading").select("*").execute()
     return response.data
 
-# 🟢 تدريب وحفظ نموذج (يعتمد على الأعمدة الموجودة فقط)
+# 🟢 تدريب وحفظ نموذج
 def train_and_save(feature, filename):
     readings = fetch_readings_data()
     df = pd.DataFrame(readings)
@@ -114,7 +108,7 @@ def train_and_save(feature, filename):
     if df.empty:
         return {"error": "لا توجد بيانات للتدريب"}
 
-    # توليد العمود الهدف داخليًا من القيم
+    # توليد العمود الهدف داخليًا
     df["is_emergency"] = ((df["temperature"] > 38) | (df["oxygen_saturation"] < 90)).astype(int)
 
     X = df[[feature]]
@@ -132,11 +126,7 @@ def train_and_save(feature, filename):
 
     github_result = upload_to_github(save_path, filename)
 
-    return {
-        "message": f"تم تدريب النموذج {filename} ورفعه إلى GitHub",
-        "accuracy": acc,
-        "github_response": github_result
-    }
+    return {"message": f"تم تدريب النموذج {filename} ورفعه إلى GitHub", "accuracy": acc, "github_response": github_result}
 
 # 🟢 مسارات التدريب
 @app.get("/train/temperature")
@@ -182,11 +172,7 @@ def predict():
 
     emergency_flag = int((latest_reading["temperature"] > 38) or (latest_reading["oxygen_saturation"] < 90))
 
-    return {
-        "latest_reading": latest_reading,
-        "prediction_results": results,
-        "emergency_flag": emergency_flag
-    }
+    return {"latest_reading": latest_reading, "prediction_results": results, "emergency_flag": emergency_flag}
 
 # 🟢 التنبؤ بحسب رقم القراءة
 @app.get("/predict/{read_id}")
@@ -211,9 +197,4 @@ def predict_by_id(read_id: int):
 
     emergency_flag = int((selected_reading["temperature"] > 38) or (selected_reading["oxygen_saturation"] < 90))
 
-    return {
-        "read_id": read_id,
-        "reading": selected_reading,
-        "prediction_results": results,
-        "emergency_flag": emergency_flag
-    }
+    return {"read_id": read_id, "reading": selected_reading, "prediction_results": results, "emergency_flag": emergency_flag}
