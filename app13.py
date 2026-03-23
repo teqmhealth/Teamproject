@@ -106,13 +106,16 @@ def fetch_readings_data():
     response = supabase.table("tbl_reading").select("*").execute()
     return response.data
 
-# 🟢 تدريب وحفظ نموذج
+# 🟢 تدريب وحفظ نموذج (يعتمد على الأعمدة الموجودة فقط)
 def train_and_save(feature, filename):
     readings = fetch_readings_data()
     df = pd.DataFrame(readings)
 
-    if df.empty or "is_emergency" not in df.columns:
-        return {"error": "البيانات غير صالحة للتدريب"}
+    if df.empty:
+        return {"error": "لا توجد بيانات للتدريب"}
+
+    # توليد العمود الهدف داخليًا من القيم
+    df["is_emergency"] = ((df["temperature"] > 38) | (df["oxygen_saturation"] < 90)).astype(int)
 
     X = df[[feature]]
     y = df["is_emergency"]
@@ -122,13 +125,11 @@ def train_and_save(feature, filename):
     model.fit(X_train, y_train)
     acc = model.score(X_test, y_test)
 
-    # حفظ محليًا مؤقتًا
     save_dir = "models"
     os.makedirs(save_dir, exist_ok=True)
     save_path = os.path.join(save_dir, filename)
     joblib.dump(model, save_path)
 
-    # رفع إلى GitHub
     github_result = upload_to_github(save_path, filename)
 
     return {
@@ -149,6 +150,14 @@ def train_oxygen():
 @app.get("/train/pulse")
 def train_pulse():
     return train_and_save("pulse_rate", "pulse_model.pkl")
+
+@app.get("/train/all")
+def train_all():
+    return {
+        "temperature": train_and_save("temperature", "temperature_model.pkl"),
+        "oxygen": train_and_save("oxygen_saturation", "oxygen_model.pkl"),
+        "pulse": train_and_save("pulse_rate", "pulse_model.pkl")
+    }
 
 # 🟢 التنبؤ من آخر قراءة
 @app.get("/predict")
@@ -171,7 +180,40 @@ def predict():
             model = joblib.load(path)
             results[feature] = int(model.predict([[latest_reading[feature]]])[0])
 
+    emergency_flag = int((latest_reading["temperature"] > 38) or (latest_reading["oxygen_saturation"] < 90))
+
     return {
         "latest_reading": latest_reading,
-        "prediction_results": results
+        "prediction_results": results,
+        "emergency_flag": emergency_flag
+    }
+
+# 🟢 التنبؤ بحسب رقم القراءة
+@app.get("/predict/{read_id}")
+def predict_by_id(read_id: int):
+    reading = supabase.table("tbl_reading").select("*").eq("read_id", read_id).execute()
+    if not reading.data:
+        return {"error": f"لا توجد قراءة بالرقم {read_id}"}
+
+    selected_reading = reading.data[0]
+    results = {}
+
+    models_dir = "models"
+    for fname, feature in {
+        "temperature_model.pkl": "temperature",
+        "oxygen_model.pkl": "oxygen_saturation",
+        "pulse_model.pkl": "pulse_rate"
+    }.items():
+        path = os.path.join(models_dir, fname)
+        if os.path.exists(path):
+            model = joblib.load(path)
+            results[feature] = int(model.predict([[selected_reading[feature]]])[0])
+
+    emergency_flag = int((selected_reading["temperature"] > 38) or (selected_reading["oxygen_saturation"] < 90))
+
+    return {
+        "read_id": read_id,
+        "reading": selected_reading,
+        "prediction_results": results,
+        "emergency_flag": emergency_flag
     }
