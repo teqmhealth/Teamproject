@@ -24,56 +24,59 @@ headers = {
     "Prefer": "return=representation"
 }
 
-# 🟢 قراءة المرضى
+# 🟢 المرضى
 @app.get("/patients")
 def get_patients():
     url = f"{SUPABASE_URL}/rest/v1/tbl_patient?select=*"
     r = requests.get(url, headers=headers)
     return r.json()
 
-# 🟢 إضافة مريض جديد
 @app.post("/patients")
 def add_patient(patient: dict):
     url = f"{SUPABASE_URL}/rest/v1/tbl_patient"
     r = requests.post(url, headers=headers, json=patient)
     return r.json()
 
-# 🟢 قراءة المستخدمين
+# 🟢 المستخدمين
 @app.get("/users")
 def get_users():
     url = f"{SUPABASE_URL}/rest/v1/tbl_user?select=*"
     r = requests.get(url, headers=headers)
     return r.json()
 
-# 🟢 إضافة مستخدم جديد
 @app.post("/users")
 def add_user(user: dict):
     url = f"{SUPABASE_URL}/rest/v1/tbl_user"
     r = requests.post(url, headers=headers, json=user)
     return r.json()
 
-# 🟢 قراءة القراءات
+# 🟢 القراءات
 @app.get("/readings")
 def get_readings():
     url = f"{SUPABASE_URL}/rest/v1/tbl_reading?select=*"
     r = requests.get(url, headers=headers)
     return r.json()
 
-# 🟢 إضافة قراءة جديدة
 @app.post("/readings")
 def add_reading(reading: dict):
     url = f"{SUPABASE_URL}/rest/v1/tbl_reading"
     r = requests.post(url, headers=headers, json=reading)
     return r.json()
 
-# 🟢 قراءة التقارير
+# 🟢 التقارير
 @app.get("/reports")
 def get_reports():
     url = f"{SUPABASE_URL}/rest/v1/tbl_report?select=*"
     r = requests.get(url, headers=headers)
     return r.json()
 
-# 🟢 قراءة التنبيهات
+@app.get("/reports/{pat_id}")
+def fetch_reports(pat_id: int):
+    url = f"{SUPABASE_URL}/rest/v1/tbl_report?pat_id=eq.{pat_id}"
+    r = requests.get(url, headers=headers)
+    return r.json()
+
+# 🟢 التنبيهات
 @app.get("/alerts")
 def get_alerts():
     url = f"{SUPABASE_URL}/rest/v1/tbl_alert?select=*"
@@ -99,13 +102,13 @@ def upload_to_github(filepath, filename):
     return response.json()
 
 # 🟢 جلب البيانات من Supabase
-def fetch_readings():
+def fetch_readings_data():
     response = supabase.table("tbl_reading").select("*").execute()
     return response.data
 
 # 🟢 تدريب وحفظ نموذج
 def train_and_save(feature, filename):
-    readings = fetch_readings()
+    readings = fetch_readings_data()
     df = pd.DataFrame(readings)
 
     if df.empty or "is_emergency" not in df.columns:
