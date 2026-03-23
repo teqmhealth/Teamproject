@@ -1,40 +1,77 @@
 from fastapi import FastAPI
-import requests, json
-from datetime import datetime, timezone
+import os, requests
 from dotenv import load_dotenv
-import os
-import ecg_model
+
+# تحميل القيم من .env
+load_dotenv()
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 app = FastAPI()
 
-# تحميل القيم من ملف .env
-load_dotenv()
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-API_KEY = os.getenv("SUPABASE_KEY")
-
-HEADERS = {
-    "apikey": API_KEY,
-    "Authorization": f"Bearer {API_KEY}",
-    "Content-Type": "application/json"
+# إعداد الهيدر الأساسي
+headers = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+    "Prefer": "return=representation"
 }
 
-def fetch_readings(pat_id):
-    url = f"{SUPABASE_URL}/rest/v1/tbl_reading?pat_id=eq.{pat_id}&select=*"
-    response = requests.get(url, headers=HEADERS)
-    return response.json()
+# 🟢 قراءة المرضى
+@app.get("/patients")
+def get_patients():
+    url = f"{SUPABASE_URL}/rest/v1/tbl_patient?select=*"
+    r = requests.get(url, headers=headers)
+    return r.json()
 
-def save_report(pat_id, diagnosis, recommendation):
-    url = f"{SUPABASE_URL}/rest/v1/tbl_report"
-    data = {
-        "pat_id": pat_id,
-        "rep_date": datetime.now(timezone.utc).isoformat(),
-        "rep_diagnosis": diagnosis,
-        "rep_recommendation": recommendation
-    }
-    requests.post(url, headers=HEADERS, json=data)
+# 🟢 إضافة مريض جديد
+@app.post("/patients")
+def add_patient(patient: dict):
+    url = f"{SUPABASE_URL}/rest/v1/tbl_patient"
+    r = requests.post(url, headers=headers, json=patient)
+    return r.json()
 
-def fetch_reports(pat_id):
+# 🟢 قراءة المستخدمين
+@app.get("/users")
+def get_users():
+    url = f"{SUPABASE_URL}/rest/v1/tbl_user?select=*"
+    r = requests.get(url, headers=headers)
+    return r.json()
+
+# 🟢 إضافة مستخدم جديد
+@app.post("/users")
+def add_user(user: dict):
+    url = f"{SUPABASE_URL}/rest/v1/tbl_user"
+    r = requests.post(url, headers=headers, json=user)
+    return r.json()
+
+# 🟢 قراءة القراءات
+@app.get("/readings")
+def get_readings():
+    url = f"{SUPABASE_URL}/rest/v1/tbl_reading?select=*"
+    r = requests.get(url, headers=headers)
+    return r.json()
+
+# 🟢 إضافة قراءة جديدة
+@app.post("/readings")
+def add_reading(reading: dict):
+    url = f"{SUPABASE_URL}/rest/v1/tbl_reading"
+    r = requests.post(url, headers=headers, json=reading)
+    return r.json()
+
+# 🟢 قراءة التقارير
+@app.get("/reports")
+def get_reports():
+    url = f"{SUPABASE_URL}/rest/v1/tbl_report?select=*"
+    r = requests.get(url, headers=headers)
+    return r.json()
+
+# 🟢 قراءة التنبيهات
+@app.get("/alerts")
+def get_alerts():
+    url = f"{SUPABASE_URL}/rest/v1/tbl_alert?select=*"
+    r = requests.get(url, headers=headers)
+    return r.json()def fetch_reports(pat_id):
     url = f"{SUPABASE_URL}/rest/v1/tbl_report?pat_id=eq.{pat_id}&select=*"
     response = requests.get(url, headers=HEADERS)
     return response.json()
