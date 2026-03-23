@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 app = FastAPI()
 
+# تحميل متغيرات البيئة
 load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
